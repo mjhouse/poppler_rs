@@ -1,0 +1,20 @@
+[package]
+name = "poppler-rs"
+version = "0.1.0"
+license-file = "LICENSE"
+repository = "https://github.com/mjhouse/poppler_rs"
+description = "A wrapper for the Poppler PDF library."
+authors = ["Michael House <mjhouse@protonmail.com>"]
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+cairo-rs = { version = "0.9.1", features = ["pdf"] }
+cairo-sys-rs = { version = "0.10.0", features = ["pdf"] }
+
+# for poppler
+glib = "0.10.3"
+glib-sys = "0.10.1"
+gobject-sys = "0.10.0"
+
+thiserror = "1.0.23"
