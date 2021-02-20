@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
-mod interface;
-mod poppler;
 mod util;
 mod error;
+mod interface;
 
-pub use poppler::{PopplerDocument, PopplerPage};
+mod document;
+mod page;
+
+pub use document::PopplerDocument;
+pub use page::PopplerPage;
