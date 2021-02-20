@@ -68,10 +68,12 @@ impl PopplerDocument {
     pub fn get_title(&self) -> Option<String> {
         unsafe {
             match interface::poppler_document_get_title(self.0) {
-                r if !r.is_null()  =>
-                    CString::from(CStr::from_ptr(r))
+                r if !r.is_null()  => {
+                    let r = CString::from(CStr::from_ptr(r))
                         .into_string()
-                        .ok(),
+                        .ok();
+                    r
+                }
                 _ => None 
             }
         }
