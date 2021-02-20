@@ -2,31 +2,26 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_void};
 use std::path::Path;
 
-use crate::util;
-use crate::interface;
 use crate::error::Error;
+use crate::interface;
+use crate::util;
 
+use crate::interface::{PopplerDocumentPtr};
 use crate::page::PopplerPage;
-use crate::interface::{
-    PopplerDocumentPtr,
-    PopplerPagePtr
-};
 
 macro_rules! string {
     ( $p: expr ) => {
         unsafe {
             match $p {
-                r if !r.is_null()  => {
-                    let c = CString::from(CStr::from_ptr(r))
-                        .into_string()
-                        .ok();
+                r if !r.is_null() => {
+                    let c = CString::from(CStr::from_ptr(r)).into_string().ok();
                     libc::free(r as *mut c_void);
                     c
                 }
-                _ => None 
+                _ => None,
             }
         }
-    }
+    };
 }
 
 macro_rules! call {
@@ -43,29 +38,31 @@ macro_rules! call {
     }
 }
 
-#[derive(Debug)]
+/// A PDF document ([see freedesktop.org])
+///
+/// [see freedesktop.org]: https://poppler.freedesktop.org/api/glib/PopplerDocument.html
 pub struct PopplerDocument(pub(crate) *mut PopplerDocumentPtr);
 
 impl PopplerDocument {
-    pub fn new_from_file<P: AsRef<Path>>(
-        p: P,
-        password: &str,
-    ) -> Result<PopplerDocument,Error> {
+    /// Load a pdf file from a path
+    pub fn new_from_file<P: AsRef<Path>>(p: P, password: &str) -> Result<PopplerDocument, Error> {
         let pass = CString::new(password)?;
         let path = util::path_to_glib_url(p)?;
 
         let doc = call!(
             interface::poppler_document_new_from_file,
-            path.as_ptr(), 
-            pass.as_ptr())?;
+            path.as_ptr(),
+            pass.as_ptr()
+        )?;
 
         Ok(PopplerDocument(doc))
     }
+
+    /// Create a PopplerDocument from raw bytes
     pub fn new_from_data<C: AsRef<[u8]>>(
-        content:  C,
+        content: C,
         password: &str,
-    ) -> Result<PopplerDocument,Error> {
-        
+    ) -> Result<PopplerDocument, Error> {
         let pass = CString::new(password)?;
         let data = content.as_ref();
 
@@ -77,28 +74,38 @@ impl PopplerDocument {
             interface::poppler_document_new_from_data,
             data.as_ptr() as *const c_char,
             data.len() as c_int,
-            pass.as_ptr())?;
+            pass.as_ptr()
+        )?;
 
         Ok(PopplerDocument(doc))
     }
 
+    /// Get the title
     pub fn get_title(&self) -> Option<String> {
         string!(interface::poppler_document_get_title(self.0))
     }
+
+    /// Get XML metadata as a String
     pub fn get_metadata(&self) -> Option<String> {
         string!(interface::poppler_document_get_metadata(self.0))
     }
+
+    /// Get the PDF version
     pub fn get_pdf_version_string(&self) -> Option<String> {
         string!(interface::poppler_document_get_pdf_version_string(self.0))
     }
+
+    /// Get file permissions
     pub fn get_permissions(&self) -> u8 {
         unsafe { interface::poppler_document_get_permissions(self.0) as u8 }
     }
 
+    /// Get the number of pages
     pub fn get_n_pages(&self) -> usize {
         (unsafe { interface::poppler_document_get_n_pages(self.0) }) as usize
     }
 
+    /// Get a page
     pub fn get_page(&self, index: usize) -> Option<PopplerPage> {
         match unsafe { interface::poppler_document_get_page(self.0, index as c_int) } {
             ptr if ptr.is_null() => None,
@@ -111,36 +118,28 @@ impl PopplerDocument {
 mod tests {
 
     use super::*;
-    
-    use std::{
-        fs::File, 
-        io::Read, 
-        io::Bytes
-    };
+
+    use std::{fs::File, io::Read};
 
     macro_rules! file {
-        ( $f:expr ) => {
-            {
-                use std::path::PathBuf;
-                let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                d.push("test");
-                d.push($f);
-                d
-            }
-        }
+        ( $f:expr ) => {{
+            use std::path::PathBuf;
+            let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            d.push("test");
+            d.push($f);
+            d
+        }};
     }
 
     macro_rules! data {
-        ( $f:expr ) => {
-            {
-                File::open($f)
-                    .expect("Could not open file")
-                    .bytes()
-                    .map(Result::ok)
-                    .filter_map(|v| v)
-                    .collect::<Vec<u8>>()
-            }
-        }
+        ( $f:expr ) => {{
+            File::open($f)
+                .expect("Could not open file")
+                .bytes()
+                .map(Result::ok)
+                .filter_map(|v| v)
+                .collect::<Vec<u8>>()
+        }};
     }
 
     #[test]
@@ -175,49 +174,42 @@ mod tests {
     #[test]
     fn document_has_title() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
         assert!(file.get_title().is_some());
     }
 
     #[test]
     fn document_has_page_count() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
-        assert_eq!(file.get_n_pages(),1);
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
+        assert_eq!(file.get_n_pages(), 1);
     }
 
     #[test]
     fn document_has_metadata() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
         assert!(file.get_metadata().is_some());
     }
 
     #[test]
     fn document_has_pdf_version_string() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
         assert!(file.get_pdf_version_string().is_some());
     }
 
     #[test]
     fn document_has_permissions() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
-        assert_eq!(file.get_permissions(),0xff);
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
+        assert_eq!(file.get_permissions(), 0xff);
     }
 
     #[test]
     fn document_has_page() {
         let path = file!("text.pdf");
-        let file = PopplerDocument::new_from_file(&path, "")
-            .expect("Could not open file");
+        let file = PopplerDocument::new_from_file(&path, "").expect("Could not open file");
         assert!(file.get_page(0).is_some());
     }
-
 }

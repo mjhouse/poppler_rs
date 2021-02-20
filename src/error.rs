@@ -2,7 +2,6 @@ use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
-
     #[error("Given data is empty")]
     EmptyData,
 
@@ -11,5 +10,4 @@ pub enum Error {
 
     #[error(transparent)]
     GlibError(#[from] glib::error::Error),
-
 }

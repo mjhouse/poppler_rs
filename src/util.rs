@@ -1,61 +1,31 @@
-
 use glib;
 use glib_sys::GError;
-use std::ffi::{CStr,CString, OsString};
-use std::{fs, path, ptr};
+use std::ffi::{CStr, CString, OsString};
+use std::{fs, path};
 
 use glib::{
+    error::{Error, ErrorDomain},
     FileError,
-    error::{Error,ErrorDomain}
 };
 
 pub fn to_glib_error(e: *mut GError) -> glib::error::Error {
     unsafe {
         if !e.is_null() {
             Error::new(
-                ErrorDomain::from((*e).code)
-                    .unwrap_or(FileError::Failed),
-                CStr::from_ptr((*e).message).to_str()
-                    .unwrap_or("Invalid error message")
+                ErrorDomain::from((*e).code).unwrap_or(FileError::Failed),
+                CStr::from_ptr((*e).message)
+                    .to_str()
+                    .unwrap_or("Invalid error message"),
             )
-        }
-        else {
+        } else {
             Error::new(
-                ErrorDomain::from(0)
-                    .unwrap_or(FileError::Failed),
+                ErrorDomain::from(0).unwrap_or(FileError::Failed),
                 CStr::from_bytes_with_nul(b"Error is null\0")
-                    .unwrap().to_str()
-                    .unwrap_or("Invalid error message")
+                    .unwrap()
+                    .to_str()
+                    .unwrap_or("Invalid error message"),
             )
         }
-    }
-}
-
-
-
-
-
-
-
-
-
-pub fn call_with_gerror<T, F>(f: F) -> Result<*mut T, glib::error::Error>
-where
-    F: FnOnce(*mut *mut GError) -> *mut T,
-{
-    // initialize error to a null-pointer
-    let mut err = ptr::null_mut();
-
-    // call the c-library function
-    let return_value = f(&mut err as *mut *mut GError);
-
-    if return_value.is_null() {
-        Err(glib::error::Error::new(
-            glib::FileError::Failed,
-            "Return value was null",
-        ))
-    } else {
-        Ok(return_value)
     }
 }
 

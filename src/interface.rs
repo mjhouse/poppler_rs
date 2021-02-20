@@ -37,7 +37,9 @@ extern "C" {
 
     pub fn poppler_document_get_metadata(document: *mut PopplerDocumentPtr) -> *mut c_char;
 
-    pub fn poppler_document_get_pdf_version_string(document: *mut PopplerDocumentPtr) -> *mut c_char;
+    pub fn poppler_document_get_pdf_version_string(
+        document: *mut PopplerDocumentPtr,
+    ) -> *mut c_char;
 
     pub fn poppler_document_get_permissions(document: *mut PopplerDocumentPtr) -> c_uint;
 
@@ -49,7 +51,10 @@ extern "C" {
 
     pub fn poppler_page_render(page: *mut PopplerPagePtr, cairo: *mut cairo_sys::cairo_t);
 
-    pub fn poppler_page_render_for_printing(page: *mut PopplerPagePtr, cairo: *mut cairo_sys::cairo_t);
+    pub fn poppler_page_render_for_printing(
+        page: *mut PopplerPagePtr,
+        cairo: *mut cairo_sys::cairo_t,
+    );
 
     pub fn poppler_page_get_text(page: *mut PopplerPagePtr) -> *mut c_char;
 }
