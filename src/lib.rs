@@ -23,12 +23,12 @@
 //! -and go nuts. Most of Poppler is not available wrapped but If you need
 //! something specific, submit a pull request.
 
-mod error;
 mod interface;
 mod util;
 
 mod document;
 mod page;
 
+pub mod error;
 pub use document::PopplerDocument;
 pub use page::PopplerPage;
